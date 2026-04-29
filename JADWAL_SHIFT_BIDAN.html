@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jadwal Shift - Klinik Nabilah Pulungan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.1/latin.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-light: #f472b6;
+            --primary-dark: #db2777;
+            --primary-bg: #fce7f3;
+            --bg: #fdf2f8;
+            --card-bg: #ffffff;
+            --text: #831843;
+            --text-light: #9d174d;
+            --border: #fce7f3;
+            --shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 24px 16px 28px;
+            border-radius: 0 0 36px 36px;
+            box-shadow: 0 8px 40px rgba(219, 39, 119, 0.3);
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before, header::after {
+            content: ''; position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.1); animation: floatBubble 8s ease-in-out infinite;
+        }
+        header::before { top: -40%; right: -10%; width: 240px; height: 240px; }
+        header::after {
+            bottom: -25%; left: -5%; width: 180px; height: 180px;
+            background: rgba(255,255,255,0.07); animation-direction: reverse; animation-duration: 6s;
+        }
+        @keyframes floatBubble { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(15px) scale(1.05); } }
+        .header-content {
+            position: relative; z-index: 2; max-width: 1280px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+        }
+        .header-title h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
+        .header-title p { opacity: 0.92; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.25);
+            padding: 3px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700;
+        }
+        .live-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: pulseDot 2s infinite; }
+        @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .live-clock {
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(12px); padding: 10px 18px;
+            border-radius: 14px; text-align: right; border: 1px solid rgba(255,255,255,0.3); min-width: 110px;
+        }
+        .live-time { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+        .live-date { font-size: 0.75rem; opacity: 0.95; margin-top: 2px; }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+        .controls-bar {
+            display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+            background: var(--card-bg); padding: 14px; border-radius: 16px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .nav-controls { display: flex; gap: 6px; flex: 1; min-width: 260px; }
+        .nav-btn {
+            padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);
+            background: white; color: var(--primary-dark); cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; font-size: 1rem; min-width: 42px;
+        }
+        .nav-btn:hover { background: var(--primary-bg); border-color: var(--primary); }
+        .nav-btn.today { font-size: 0.8rem; font-weight: 600; }
+        .date-display {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.05rem; color: var(--primary-dark); min-width: 180px; text-align: center;
+        }
+        .view-tabs {
+            display: flex; background: var(--bg); border-radius: 14px; padding: 4px; gap: 4px;
+            overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 300px;
+        }
+        .view-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            padding: 8px 12px; border-radius: 10px; border: none; background: transparent;
+            color: var(--text-light); font-family: inherit; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); white-space: nowrap;
+            display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        }
+        .tab-btn.active { background: white; color: var(--primary-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tab-btn:hover:not(.active) { background: rgba(236, 72, 153, 0.06); }
+        .action-btn {
+            padding: 10px 16px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; font-family: inherit; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 3px 12px rgba(219, 39, 119, 0.25);
+        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(219, 39, 119, 0.35); }
+
+        .view-content { display: none; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .view-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+        .schedule-table-wrap {
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden;
+        }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .schedule-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+        .schedule-table thead th {
+            padding: 14px 10px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; font-weight: 700; font-size: 0.85rem; text-align: center;
+            position: sticky; top: 0; z-index: 5; white-space: nowrap;
+        }
+        .schedule-table thead th:first-child { position: sticky; left: 0; z-index: 6; background: var(--primary-dark); }
+        .schedule-table tbody tr { transition: var(--transition); }
+        .schedule-table tbody tr:hover { background: #fff5f8; }
+        .schedule-table tbody td {
+            padding: 12px 8px; text-align: center; font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border);
+        }
+        .schedule-table tbody td:first-child {
+            position: sticky; left: 0; background: white; font-weight: 700;
+            z-index: 3; border-right: 2px solid var(--border); text-align: left; padding-left: 16px;
+        }
+        .schedule-table tbody tr:hover td:first-child { background: #fff5f8; }
+        .schedule-table tbody tr.today-row { background: #fff0f5; }
+        .schedule-table tbody tr.today-row td:first-child { background: var(--primary-bg); }
+        .schedule-table tbody tr.today-row td:not(:first-child) { background: #fff0f5; }
+
+        .shift-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; min-width: 70px;
+        }
+        .shift-pagi { background: #dbeafe; color: #1d4ed8; }
+        .shift-sore { background: #ede9fe; color: #6d28d9; }
+        .shift-jumat { background: #d1fae5; color: #047857; }
+        .shift-libur { background: #f3f4f6; color: #4b5563; }
+        .shift-non { background: #fef3c7; color: #b45309; }
+
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; }
+        .summary-card {
+            background: white; border-radius: 14px; padding: 16px; text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid var(--border); transition: var(--transition);
+        }
+        .summary-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+        .summary-count { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+        .summary-label { font-size: 0.75rem; color: var(--text-light); margin-top: 4px; font-weight: 600; }
+
+        .month-grid {
+            background: var(--card-bg); border-radius: var(--radius); overflow: hidden;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .cal-week-header {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            background: var(--primary); color: white; padding: 12px 0; text-align: center;
+            font-weight: 700; font-size: 0.8rem;
+        }
+        .cal-week-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); }
+        .cal-day {
+            background: white; min-height: 100px; padding: 8px; cursor: pointer;
+            transition: var(--transition); position: relative;
+        }
+        .cal-day:hover { background: #fff5f8; z-index: 2; }
+        .cal-day.other-month { background: #faf8fa; opacity: 0.4; pointer-events: none; }
+        .cal-day.is-today { background: #fff0f6; box-shadow: inset 0 0 0 2px var(--primary); }
+        .cal-date { font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; }
+        .cal-staff-row { display: flex; flex-direction: column; gap: 3px; }
+        .cal-staff-item {
+            display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.65rem; font-weight: 600;
+        }
+        .cal-staff-item .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+        .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
+        .legend-item {
+            display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600;
+            background: white; padding: 8px 14px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border);
+        }
+        .legend-color { width: 16px; height: 16px; border-radius: 5px; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal {
+            background: white; border-radius: 20px; max-width: 520px; width: 100%; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.show .modal { transform: scale(1); }
+        .modal-header {
+            padding: 20px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; display: flex; justify-content: space-between; align-items: center;
+            border-radius: 20px 20px 0 0; position: sticky; top: 0; z-index: 2;
+        }
+        .modal-header h3 { font-weight: 700; font-size: 1.1rem; }
+        .modal-close {
+            background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition); font-size: 0.9rem;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+        .modal-body { padding: 16px; }
+        .modal-staff-row {
+            display: flex; align-items: center; gap: 12px; padding: 12px; margin: 6px 0;
+            background: white; border-radius: 12px; border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .modal-staff-row:hover { background: #fff5f8; border-color: var(--primary-light); }
+        .modal-avatar {
+            width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1rem; flex-shrink: 0;
+        }
+        .modal-info { flex: 1; }
+        .modal-name { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+        .modal-shift { margin-top: 4px; }
+        .modal-coworkers { font-size: 0.75rem; color: var(--text-light); margin-top: 4px; }
+
+        /* Yearly View */
+        .year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .mini-month {
+            background: white; border-radius: 16px; padding: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid var(--border); transition: var(--transition);
+        }
+        .mini-month:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .mini-month h4 {
+            text-align: center; color: var(--primary-dark); margin-bottom: 10px; font-size: 0.9rem; font-weight: 700;
+        }
+        .mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+        .mini-cal .dh { color: var(--text-light); font-weight: 600; padding: 4px 0; font-size: 0.7rem; }
+        .mini-cal .day {
+            padding: 4px 2px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); position: relative; min-height: 24px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .mini-cal .day:hover { background: #fff5f8; transform: scale(1.1); }
+        .mini-cal .day.is-today { background: var(--primary); color: white; font-weight: 800; }
+        .mini-cal .day.has-pagi { background: #dbeafe; color: #1d4ed8; }
+        .mini-cal .day.has-sore { background: #ede9fe; color: #6d28d9; }
+        .mini-cal .day.has-libur { background: #f3f4f6; color: #9ca3af; }
+        .mini-cal .day.empty { cursor: default; }
+        .mini-cal .day.empty:hover { background: transparent; transform: none; }
+
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--primary-dark); color: white; padding: 12px 28px; border-radius: 50px;
+            box-shadow: 0 8px 30px rgba(219, 39, 119, 0.3); z-index: 2000;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 600; font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        @media print {
+            body { background: white; padding: 0; }
+            header { background: white !important; color: black; border: 2px solid #ccc; border-radius: 0; }
+            .controls-bar, .action-btn, .legend, .modal-overlay { display: none !important; }
+            .schedule-table { border: 1px solid #ddd; min-width: unset; }
+            .summary-card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+        }
+        @media (max-width: 768px) {
+            header { padding: 18px 12px 22px; border-radius: 0 0 28px 28px; }
+            .header-title h1 { font-size: 1.15rem; }
+            .live-time { font-size: 1.3rem; }
+            .live-clock { padding: 8px 14px; min-width: 95px; }
+            .controls-bar { padding: 12px; gap: 8px; }
+            .nav-controls { min-width: 220px; }
+            .date-display { font-size: 0.9rem; min-width: 150px; }
+            .tab-btn { padding: 7px 10px; font-size: 0.75rem; }
+            .summary-cards { grid-template-columns: repeat(2, 1fr); }
+            .cal-day { min-height: 75px; padding: 6px; }
+            .cal-staff-item { font-size: 0.6rem; }
+            .year-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+            .modal { max-width: 100%; margin: 0 10px; }
+        }
+        @media (max-width: 480px) {
+            .container { padding: 0 10px; }
+            .header-title h1 { font-size: 1.05rem; }
+            .date-display { font-size: 0.82rem; min-width: 120px; }
+            .nav-btn { padding: 8px 10px; min-width: 36px; }
+            .cal-day { min-height: 60px; }
+            .mini-cal .day { font-size: 0.65rem; padding: 2px; min-height: 20px; }
+            .legend { gap: 8px; }
+            .legend-item { padding: 6px 10px; font-size: 0.72rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="header-title">
+            <h1><i class="fas fa-hospital"></i> Klinik Nabilah Pulungan</h1>
+            <p><span class="live-badge"><span class="live-dot"></span> LIVE</span> Jadwal Shift Seluruh Staff</p>
+        </div>
+        <div class="live-clock">
+            <div class="live-time" id="liveTime">00:00:00</div>
+            <div class="live-date" id="liveDate">Loading...</div>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="controls-bar">
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="nav(-1)"><i class="fas fa-chevron-left"></i></button>
+            <div class="date-display" id="dateDisplay">Loading...</div>
+            <button class="nav-btn" onclick="nav(1)"><i class="fas fa-chevron-right"></i></button>
+            <button class="nav-btn today" onclick="goToday()"><i class="fas fa-calendar-day"></i></button>
+        </div>
+        <div class="view-tabs" id="viewTabs">
+            <button class="tab-btn active" data-view="daily"><i class="fas fa-sun"></i> Harian</button>
+            <button class="tab-btn" data-view="weekly"><i class="fas fa-calendar-week"></i> Mingguan</button>
+            <button class="tab-btn" data-view="monthly"><i class="fas fa-calendar-alt"></i> Bulanan</button>
+            <button class="tab-btn" data-view="yearly"><i class="fas fa-calendar"></i> Tahunan</button>
+        </div>
+        <button class="action-btn" onclick="exportData()"><i class="fas fa-download"></i> Unduh</button>
+    </div>
+
+    <div id="view-daily" class="view-content active"></div>
+    <div id="view-weekly" class="view-content"></div>
+    <div id="view-monthly" class="view-content"></div>
+    <div id="view-yearly" class="view-content"></div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Pagi</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ede9fe;"></div> Sore</div>
+        <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Jumat Full</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f3f4f6;"></div> Libur</div>
+        <div class="legend-item"><div class="legend-color" style="background:#fef3c7;"></div> Non-Shift</div>
+    </div>
+
+    <div class="summary-cards" id="summaryCards"></div>
+</main>
+
+<div class="modal-overlay" id="dayModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Detail Jadwal</h3>
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const CONFIG = {
+        START_DATE: "2025-12-01",
+        CYCLE_DAYS: 42,
+        STAFF_MIDWIVES: ["Erlina", "Riska", "Tri", "Desva", "Aisyah", "Rina"],
+        STAFF_NON_SHIFT: ["Dina", "Ropat"],
+        ROSTER_CYCLE: [
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Rina","Erlina","Riska"],s:["Tri","Desva"],l:["Aisyah"]},
+            {p:["Aisyah","Rina","Erlina"],s:["Riska","Tri"],l:["Desva"]},
+            {p:["Desva","Aisyah","Rina"],s:["Erlina","Riska"],l:["Tri"]},
+            {p:["Tri","Desva","Aisyah"],s:["Rina","Erlina"],l:["Riska"]},
+            {p:["Erlina","Riska","Tri","Desva","Aisyah","Rina"],s:[],l:[]},
+            {p:["Riska","Tri","Desva"],s:["Aisyah","Rina"],l:["Erlina"]},
+            {p:["Erlina","Riska","Tri"],s:["Desva","Aisyah"],l:["Rina"]}
+        ],
+        DAYS: ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"],
+        DAYS_SHORT: ["Min","Sen","Sel","Rab","Kam","Jum","Sab"],
+        MONTHS: ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
+    };
+    const ALL_STAFF = [...CONFIG.STAFF_MIDWIVES, ...CONFIG.STAFF_NON_SHIFT];
+
+    function getRosterIndex(date) {
+        const start = new Date(CONFIG.START_DATE); start.setHours(0,0,0,0);
+        const curr = new Date(date); curr.setHours(0,0,0,0);
+        const diff = Math.floor((curr - start) / (1000*60*60*24));
+        return ((diff % CONFIG.CYCLE_DAYS) + CONFIG.CYCLE_DAYS) % CONFIG.CYCLE_DAYS;
+    }
+
+    function getShift(staff, date) {
+        if (CONFIG.STAFF_NON_SHIFT.includes(staff)) return "Non-Shift";
+        const idx = getRosterIndex(date);
+        const day = date.getDay();
+        const sched = CONFIG.ROSTER_CYCLE[idx];
+        if (sched.p.includes(staff)) return day === 5 ? "Jumat Full" : "Pagi";
+        if (sched.s.includes(staff)) return day === 5 ? "Jumat Full" : "Sore";
+        return "Libur";
+    }
+
+    function getShiftClass(shift) {
+        const m = { 'Pagi': 'shift-pagi', 'Sore': 'shift-sore', 'Jumat Full': 'shift-jumat', 'Libur': 'shift-libur', 'Non-Shift': 'shift-non' };
+        return m[shift] || 'shift-libur';
+    }
+
+    function getCoworkers(staff, date) {
+        const shift = getShift(staff, date);
+        if (shift === "Non-Shift") return [];
+        return CONFIG.STAFF_MIDWIVES.filter(m => m !== staff && getShift(m, date) === shift);
+    }
+
+    function dateKey(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function formatDMY(d) {
+        return `${d.getDate()} ${CONFIG.MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function getWeekStart(date) {
+        const d = new Date(date); d.setHours(0,0,0,0);
+        const day = d.getDay();
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+        return d;
+    }
+
+    let currentView = 'daily';
+    let currentDate = new Date();
+
+    // ========== MODAL ==========
+    function showDayModal(date) {
+        const modal = document.getElementById('dayModal');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        title.textContent = `${CONFIG.DAYS[date.getDay()]}, ${formatDMY(date)}`;
+        
+        const rosterIdx = getRosterIndex(date);
+        let html = `<div style="text-align:center; margin-bottom:16px; padding:12px; background:var(--primary-bg); border-radius:12px;">
+            <span style="font-weight:700; color:var(--primary-dark);"><i class="fas fa-hashtag"></i> Roster Index: #${rosterIdx}</span>
+        </div>`;
+        
+        const groups = { 'Pagi': [], 'Sore': [], 'Jumat Full': [], 'Libur': [], 'Non-Shift': [] };
+        ALL_STAFF.forEach(staff => {
+            const shift = getShift(staff, date);
+            groups[shift].push(staff);
+        });
+        
+        for (const [shift, staffs] of Object.entries(groups)) {
+            if (staffs.length === 0) continue;
+            html += `<div style="margin-bottom:12px;"><div style="font-weight:700; font-size:0.85rem; color:var(--text-light); margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                <span class="shift-badge ${getShiftClass(shift)}">${shift}</span>
+                <span>(${staffs.length} orang)</span>
+            </div>`;
+            staffs.forEach(staff => {
+                const coworkers = getCoworkers(staff, date);
+                html += `<div class="modal-staff-row">
+                    <div class="modal-avatar">${staff[0]}</div>
+                    <div class="modal-info">
+                        <div class="modal-name">${staff}</div>
+                        ${coworkers.length > 0 ? `<div class="modal-coworkers"><i class="fas fa-user-friends"></i> Rekan: ${coworkers.join(', ')}</div>` : ''}
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        
+        body.innerHTML = html;
+        modal.classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('dayModal').classList.remove('show');
+    }
+
+    document.getElementById('dayModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    // ========== RENDER DAILY ==========
+    function renderDaily() {
+        const el = document.getElementById('view-daily');
+        const isToday = dateKey(currentDate) === dateKey(new Date());
+        const rosterIdx = getRosterIndex(currentDate);
+        
+        let html = `<div class="schedule-table-wrap"><div class="table-responsive"><table class="schedule-table">
+            <thead><tr>
+                <th style="min-width:120px;"><i class="fas fa-user"></i> Staff</th>
+                <th style="min-width:100px;">Shift</th>
+                <th style="min-width:140px;">Rekan Shift</th>
+                <th style="min-width:80px;">Jam</th>
+                <th style="min-width:70px;">Roster</th>
+            </tr></thead><tbody>`;
+        
+        ALL_STAFF.forEach(staff => {
+            const shift = getShift(staff, currentDate);
+            const coworkers = getCoworkers(staff, currentDate);
+            const timeMap = {
+                'Pagi': '08:00 - 17:00', 'Sore': '15:00 - 21:30', 'Jumat Full': '08:00 - 17:00',
+                'Libur': '-', 'Non-Shift': 'Fleksibel'
+            };
+            html += `<tr class="${isToday ? 'today-row' : ''}">
+                <td><div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; background:linear-gradient(135deg,var(--primary-light),var(--primary)); color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">${staff[0]}</div>
+                    <div><div style="font-weight:700;">${staff}</div><span style="font-size:0.7rem; color:var(--text-light);">${CONFIG.STAFF_NON_SHIFT.includes(staff) ? 'Admin' : 'Bidan'}</span></div>
+                </div></td>
+                <td><span class="shift-badge ${getShiftClass(shift)}">${shift}</span></td>
+                <td style="font-size:0.85rem; color:var(--text-light);">${coworkers.length > 0 ? coworkers.join(', ') : '-'}</td>
+                <td style="font-size:0.8rem; color:var(--text-light);">${timeMap[shift] || '-'}</td>
+                <td><span style="background:var(--primary-bg); color:var(--primary-dark); padding:4px 10px; border-radius:6px; font-weight:700; font-size:0.8rem;">#${rosterIdx}</span></td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div></div>';
+        el.innerHTML = html;
+        updateSummary(currentDate);
+    }
+
+    // ========== RENDER WEEKLY ==========
+    function renderWeekly() {
+        const el = document.getElementById('view-weekly');
+        const ws = getWeekStart(currentDate);
+        const we = new Date(ws); we.setDate(we.getDate() + 6);
+        
+        let html = `<div class="schedule-table-wrap"><div class="table-responsive"><table class="schedule-table">
+            <thead><tr><th class="name-col" style="min-width:100px;">Staff</th>
+            ${Array.from({length:7}, (_, i) => {
+                const d = new Date(ws); d.setDate(d.getDate() + i);
+                const isToday = dateKey(d) === dateKey(new Date());
+                return `<th style="${isToday ? 'background:var(--primary-dark);' : ''}">${CONFIG.DAYS_SHORT[d.getDay()]}<br>${d.getDate()}/${d.getMonth()+1}${isToday ? '<br><i class="fas fa-star" style="font-size:0.7rem;"></i>' : ''}</th>`;
+            }).join('')}</tr></thead><tbody>`;
+        
+        ALL_STAFF.forEach(staff => {
+            html += `<tr><td style="font-weight:700; font-size:0.85rem; white-space:nowrap;">${staff}</td>`;
+            for (let i=0; i<7; i++) {
+                const d = new Date(ws); d.setDate(d.getDate() + i);
+                const shift = getShift(staff, d);
+                html += `<td><span class="shift-badge ${getShiftClass(shift)}" style="cursor:pointer;" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">${shift.substring(0,4)}</span></td>`;
+            }
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div></div>';
+        el.innerHTML = html;
+        updateSummary(currentDate);
+    }
+
+    // ========== RENDER MONTHLY ==========
+    function renderMonthly() {
+        const el = document.getElementById('view-monthly');
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const startDate = getWeekStart(firstDay);
+        
+        let html = `<div class="month-grid">
+            <div class="cal-week-header">${CONFIG.DAYS_SHORT.map(d => `<div>${d}</div>`).join('')}</div>
+            <div class="cal-week-body">`;
+        
+        for (let i=0; i<42; i++) {
+            const d = new Date(startDate); d.setDate(d.getDate() + i);
+            if (d.getMonth() > month + 1) break;
+            const isCurrentMonth = d.getMonth() === month;
+            const isToday = dateKey(d) === dateKey(new Date());
+            
+            html += `<div class="cal-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''}" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">
+                <div class="cal-date">${d.getDate()}</div>`;
+            
+            if (isCurrentMonth) {
+                const shiftCounts = {};
+                ALL_STAFF.forEach(staff => {
+                    const shift = getShift(staff, d);
+                    shiftCounts[shift] = (shiftCounts[shift] || 0) + 1;
+                });
+                for (const [shift, count] of Object.entries(shiftCounts)) {
+                    html += `<div class="cal-staff-item ${getShiftClass(shift)}"><span class="dot"></span>${count} ${shift.substring(0,4)}</div>`;
+                }
+            }
+            html += '</div>';
+        }
+        
+        html += '</div></div>';
+        el.innerHTML = html;
+        updateSummary(currentDate);
+    }
+
+    // ========== RENDER YEARLY ==========
+    function renderYearly() {
+        const el = document.getElementById('view-yearly');
+        const year = currentDate.getFullYear();
+        
+        let html = '<div class="year-grid">';
+        
+        for (let m=0; m<12; m++) {
+            const firstDay = new Date(year, m, 1);
+            const startDate = getWeekStart(firstDay);
+            const isCurrentMonth = m === currentDate.getMonth();
+            
+            html += `<div class="mini-month"><h4>${CONFIG.MONTHS[m]} ${year}</h4><div class="mini-cal">`;
+            
+            CONFIG.DAYS_SHORT.forEach(d => html += `<div class="dh">${d}</div>`);
+            
+            for (let i=0; i<42; i++) {
+                const d = new Date(startDate); d.setDate(d.getDate() + i);
+                if (d.getMonth() > m+1) break;
+                if (d.getMonth() !== m) { html += `<div class="day empty"></div>`; continue; }
+                const isToday = dateKey(d) === dateKey(new Date());
+                
+                // Count shift types for color coding
+                let pagiCount = 0, soreCount = 0, liburCount = 0;
+                CONFIG.STAFF_MIDWIVES.forEach(staff => {
+                    const s = getShift(staff, d);
+                    if (s === 'Pagi' || s === 'Jumat Full') pagiCount++;
+                    else if (s === 'Sore') soreCount++;
+                    else liburCount++;
+                });
+                
+                let cls = '';
+                if (isToday) cls = 'is-today';
+                else if (pagiCount >= soreCount && pagiCount >= liburCount) cls = 'has-pagi';
+                else if (soreCount > pagiCount && soreCount >= liburCount) cls = 'has-sore';
+                else cls = 'has-libur';
+                
+                html += `<div class="day ${cls}" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">${d.getDate()}</div>`;
+            }
+            html += '</div></div>';
+        }
+        html += '</div>';
+        el.innerHTML = html;
+        updateSummary(currentDate);
+    }
+
+    // ========== SUMMARY ==========
+    function updateSummary(date) {
+        const pagi = CONFIG.STAFF_MIDWIVES.filter(s => { const sh = getShift(s, date); return sh === 'Pagi' || sh === 'Jumat Full'; }).length;
+        const sore = CONFIG.STAFF_MIDWIVES.filter(s => getShift(s, date) === 'Sore').length;
+        const libur = CONFIG.STAFF_MIDWIVES.filter(s => getShift(s, date) === 'Libur').length;
+        const non = CONFIG.STAFF_NON_SHIFT.length;
+        
+        document.getElementById('summaryCards').innerHTML = `
+            <div class="summary-card"><div class="summary-count" style="color:#3b82f6;">${pagi}</div><div class="summary-label">Pagi</div></div>
+            <div class="summary-card"><div class="summary-count" style="color:#8b5cf6;">${sore}</div><div class="summary-label">Sore</div></div>
+            <div class="summary-card"><div class="summary-count" style="color:#6b7280;">${libur}</div><div class="summary-label">Libur</div></div>
+            <div class="summary-card"><div class="summary-count" style="color:#f59e0b;">${non}</div><div class="summary-label">Non-Shift</div></div>
+        `;
+    }
+
+    // ========== DATE DISPLAY ==========
+    function updateDateDisplay() {
+        const el = document.getElementById('dateDisplay');
+        if (currentView === 'daily') el.textContent = formatDMY(currentDate);
+        else if (currentView === 'weekly') {
+            const ws = getWeekStart(currentDate); const we = new Date(ws); we.setDate(we.getDate()+6);
+            el.textContent = `${ws.getDate()} - ${we.getDate()} ${CONFIG.MONTHS[we.getMonth()]} ${we.getFullYear()}`;
+        }
+        else if (currentView === 'monthly') el.textContent = `${CONFIG.MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        else el.textContent = `${currentDate.getFullYear()}`;
+    }
+
+    // ========== NAV ==========
+    function nav(delta) {
+        if (currentView === 'daily') currentDate.setDate(currentDate.getDate() + delta);
+        else if (currentView === 'weekly') currentDate.setDate(currentDate.getDate() + delta * 7);
+        else if (currentView === 'monthly') currentDate.setMonth(currentDate.getMonth() + delta);
+        else currentDate.setFullYear(currentDate.getFullYear() + delta);
+        renderAll();
+    }
+
+    function goToday() {
+        currentDate = new Date();
+        renderAll();
+        showToast('📅 Kembali ke hari ini');
+    }
+
+    // ========== VIEW SWITCH ==========
+    document.getElementById('viewTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('.tab-btn');
+        if (!btn) return;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.dataset.view;
+        renderAll();
+    });
+
+    function renderAll() {
+        document.querySelectorAll('.view-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`view-${currentView}`).classList.add('active');
+        updateDateDisplay();
+        if (currentView === 'daily') renderDaily();
+        else if (currentView === 'weekly') renderWeekly();
+        else if (currentView === 'monthly') renderMonthly();
+        else if (currentView === 'yearly') renderYearly();
+    }
+
+    // ========== EXPORT ==========
+    function exportData() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        let csv = 'Tanggal,Nama,Shift,Rekan Shift,Roster Index\n';
+        
+        const days = currentView === 'daily' ? [currentDate] :
+            currentView === 'weekly' ? (() => { const ws = getWeekStart(currentDate); return Array.from({length:7}, (_,i) => { const d = new Date(ws); d.setDate(d.getDate()+i); return d; }); })() :
+            (() => { const dim = new Date(year, month+1, 0).getDate(); return Array.from({length:dim}, (_,i) => new Date(year, month, i+1)); })();
+        
+        days.forEach(d => {
+            ALL_STAFF.forEach(staff => {
+                const shift = getShift(staff, d);
+                const coworkers = getCoworkers(staff, d).join(';');
+                csv += `${dateKey(d)},${staff},${shift},${coworkers},${getRosterIndex(d)}\n`;
+            });
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `jadwal_semua_staff_${year}_${month+1}.csv`;
+        link.click();
+        showToast('✅ Data berhasil diunduh');
+    }
+
+    // ========== TOAST ==========
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // ========== CLOCK ==========
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('liveTime').textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('liveDate').textContent = `${CONFIG.DAYS[now.getDay()]}, ${formatDMY(now)}`;
+        if (now.getSeconds() === 0) renderAll();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    renderAll();
+</script>
+</body>
+</html>
+
+
