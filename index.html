@@ -150,6 +150,7 @@
         .shift-sore { background: #ede9fe; color: #6d28d9; }
         .shift-libur { background: #f3f4f6; color: #4b5563; }
         .shift-non { background: #fef3c7; color: #b45309; }
+        .shift-libur-nasional { background: #fee2e2; color: #dc2626; }
 
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; }
         .summary-card {
@@ -177,6 +178,7 @@
         .cal-day:hover { background: #fff5f8; z-index: 2; }
         .cal-day.other-month { background: #faf8fa; opacity: 0.4; pointer-events: none; }
         .cal-day.is-today { background: #fff0f6; box-shadow: inset 0 0 0 2px var(--primary); }
+        .cal-day.is-holiday { background: #fff1f2; }
         .cal-date { font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; }
         .cal-staff-row { display: flex; flex-direction: column; gap: 3px; }
         .cal-staff-item {
@@ -257,6 +259,7 @@
         .mini-cal .day.has-pagi { background: #dbeafe; color: #1d4ed8; }
         .mini-cal .day.has-sore { background: #ede9fe; color: #6d28d9; }
         .mini-cal .day.has-libur { background: #f3f4f6; color: #9ca3af; }
+        .mini-cal .day.has-libnas { background: #fee2e2; color: #dc2626; }
         .mini-cal .day.empty { cursor: default; }
         .mini-cal .day.empty:hover { background: transparent; transform: none; }
 
@@ -345,6 +348,7 @@
         <div class="legend-item"><div class="legend-color" style="background:#ede9fe;"></div> Sore</div>
         <div class="legend-item"><div class="legend-color" style="background:#f3f4f6;"></div> Libur</div>
         <div class="legend-item"><div class="legend-color" style="background:#fef3c7;"></div> Non-Shift</div>
+        <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Libur Nasional</div>
     </div>
 
     <div class="summary-cards" id="summaryCards"></div>
@@ -366,49 +370,52 @@
     const CONFIG = {
         START_DATE: "2025-12-01",
         CYCLE_DAYS: 42,
+        HOLIDAYS: ["2026-01-01", "2026-01-02"], // Sinkron dengan backend App Script
         STAFF_MIDWIVES: ["Erlina", "Riska", "Tri", "Desva", "Aisyah", "Rina"],
         STAFF_NON_SHIFT: ["Dina", "Ropat"],
+        
+        // ROSTER_CYCLE Disamakan 100% dengan BACKEND APP SCRIPT (Versi 6.1)
         ROSTER_CYCLE: [
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 0: Senin
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 1: Selasa
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 2: Rabu
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 3: Kamis
-            { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 4: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 4: Jumat (Disamakan dengan Kamis)
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 5: Sabtu
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 6: Ahad
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 7: Senin
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 8: Selasa
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 9: Rabu
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 10: Kamis
-            { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 11: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 11: Jumat (Disamakan dengan Kamis)
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 12: Sabtu
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 13: Ahad
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 14: Senin
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 15: Selasa
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 16: Rabu
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 17: Kamis
-            { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 18: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 18: Jumat (Disamakan dengan Kamis)
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 19: Sabtu
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 20: Ahad
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 21: Senin
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 22: Selasa
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 23: Rabu
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 24: Kamis
-            { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 25: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 25: Jumat (Disamakan dengan Kamis)
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 26: Sabtu
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 27: Ahad
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 28: Senin
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 29: Selasa
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 30: Rabu
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 31: Kamis
-            { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 32: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 32: Jumat (Disamakan dengan Kamis)
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] },       // 33: Sabtu
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 34: Ahad
             { p: ["Rina", "Erlina", "Riska"], s: ["Tri", "Desva"], l: ["Aisyah"] },       // 35: Senin
             { p: ["Aisyah", "Rina", "Erlina"], s: ["Riska", "Tri"], l: ["Desva"] },       // 36: Selasa
             { p: ["Desva", "Aisyah", "Rina"], s: ["Erlina", "Riska"], l: ["Tri"] },       // 37: Rabu
             { p: ["Tri", "Desva", "Aisyah"], s: ["Rina", "Erlina"], l: ["Riska"] },       // 38: Kamis
-            { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 39: Jumat (Disamakan dengan Sabtu)
+            { p: ["Riska", "Aisyah", "Rina", "Tri"], s: ["Erlina", "Desva"], l: [] },     // 39: Jumat (Disamakan dengan Kamis)
             { p: ["Riska", "Tri", "Desva"], s: ["Aisyah", "Rina"], l: ["Erlina"] },       // 40: Sabtu
             { p: ["Erlina", "Riska", "Tri"], s: ["Desva", "Aisyah"], l: ["Rina"] }        // 41: Ahad
         ],
@@ -416,7 +423,14 @@
         DAYS_SHORT: ["Min","Sen","Sel","Rab","Kam","Jum","Sab"],
         MONTHS: ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
     };
+    
+    // Header statis khusus untuk kalender agar selalu dimulai hari Senin
+    const CAL_HEADERS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
     const ALL_STAFF = [...CONFIG.STAFF_MIDWIVES, ...CONFIG.STAFF_NON_SHIFT];
+
+    function dateKey(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
 
     function getRosterIndex(date) {
         const start = new Date(CONFIG.START_DATE); start.setHours(0,0,0,0);
@@ -426,7 +440,17 @@
     }
 
     function getShift(staff, date) {
-        if (CONFIG.STAFF_NON_SHIFT.includes(staff)) return "Non-Shift";
+        const dStr = dateKey(date);
+        
+        // Cek Hari Libur Nasional (Sinkron App Script)
+        if (CONFIG.HOLIDAYS.includes(dStr)) return "Libur Nasional";
+
+        // Cek Aturan Admin (Non-Shift) - Bebas hari libur (Tidak memaksa libur hari Minggu)
+        if (CONFIG.STAFF_NON_SHIFT.includes(staff)) {
+            return "Non-Shift";
+        }
+
+        // Cek Aturan Bidan (Shift)
         const idx = getRosterIndex(date);
         const sched = CONFIG.ROSTER_CYCLE[idx];
         if (sched.p.includes(staff)) return "Pagi";
@@ -435,18 +459,20 @@
     }
 
     function getShiftClass(shift) {
-        const m = { 'Pagi': 'shift-pagi', 'Sore': 'shift-sore', 'Libur': 'shift-libur', 'Non-Shift': 'shift-non' };
+        const m = { 
+            'Pagi': 'shift-pagi', 
+            'Sore': 'shift-sore', 
+            'Libur': 'shift-libur', 
+            'Non-Shift': 'shift-non',
+            'Libur Nasional': 'shift-libur-nasional'
+        };
         return m[shift] || 'shift-libur';
     }
 
     function getCoworkers(staff, date) {
         const shift = getShift(staff, date);
-        if (shift === "Non-Shift") return [];
+        if (shift === "Non-Shift" || shift === "Libur Nasional") return [];
         return CONFIG.STAFF_MIDWIVES.filter(m => m !== staff && getShift(m, date) === shift);
-    }
-
-    function dateKey(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
     function formatDMY(d) {
@@ -454,6 +480,7 @@
     }
 
     function getWeekStart(date) {
+        // Fungsi ini secara default menarik kalender mulai hari Senin
         const d = new Date(date); d.setHours(0,0,0,0);
         const day = d.getDay();
         d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
@@ -471,11 +498,13 @@
         title.textContent = `${CONFIG.DAYS[date.getDay()]}, ${formatDMY(date)}`;
         
         const rosterIdx = getRosterIndex(date);
+        const isHoliday = CONFIG.HOLIDAYS.includes(dateKey(date));
+
         let html = `<div style="text-align:center; margin-bottom:16px; padding:12px; background:var(--primary-bg); border-radius:12px;">
-            <span style="font-weight:700; color:var(--primary-dark);"><i class="fas fa-hashtag"></i> Roster Index: #${rosterIdx}</span>
+            <span style="font-weight:700; color:var(--primary-dark);"><i class="fas fa-hashtag"></i> Roster Index: #${rosterIdx} ${isHoliday ? '(Libur Nasional)' : ''}</span>
         </div>`;
         
-        const groups = { 'Pagi': [], 'Sore': [], 'Libur': [], 'Non-Shift': [] };
+        const groups = { 'Pagi': [], 'Sore': [], 'Libur': [], 'Non-Shift': [], 'Libur Nasional': [] };
         ALL_STAFF.forEach(staff => {
             const shift = getShift(staff, date);
             if (groups[shift]) groups[shift].push(staff);
@@ -532,7 +561,7 @@
             const coworkers = getCoworkers(staff, currentDate);
             const timeMap = {
                 'Pagi': '08:00 - 17:00', 'Sore': '15:00 - 21:30',
-                'Libur': '-', 'Non-Shift': 'Fleksibel'
+                'Libur': '-', 'Non-Shift': 'Fleksibel', 'Libur Nasional': '-'
             };
             html += `<tr class="${isToday ? 'today-row' : ''}">
                 <td><div style="display:flex; align-items:center; gap:10px;">
@@ -562,7 +591,8 @@
             ${Array.from({length:7}, (_, i) => {
                 const d = new Date(ws); d.setDate(d.getDate() + i);
                 const isToday = dateKey(d) === dateKey(new Date());
-                return `<th style="${isToday ? 'background:var(--primary-dark);' : ''}">${CONFIG.DAYS_SHORT[d.getDay()]}<br>${d.getDate()}/${d.getMonth()+1}${isToday ? '<br><i class="fas fa-star" style="font-size:0.7rem;"></i>' : ''}</th>`;
+                const isHoliday = CONFIG.HOLIDAYS.includes(dateKey(d));
+                return `<th style="${isToday ? 'background:var(--primary-dark);' : (isHoliday ? 'background:#dc2626;' : '')}">${CONFIG.DAYS_SHORT[d.getDay()]}<br>${d.getDate()}/${d.getMonth()+1}${isToday ? '<br><i class="fas fa-star" style="font-size:0.7rem;"></i>' : ''}</th>`;
             }).join('')}</tr></thead><tbody>`;
         
         ALL_STAFF.forEach(staff => {
@@ -570,7 +600,7 @@
             for (let i=0; i<7; i++) {
                 const d = new Date(ws); d.setDate(d.getDate() + i);
                 const shift = getShift(staff, d);
-                html += `<td><span class="shift-badge ${getShiftClass(shift)}" style="cursor:pointer;" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">${shift.substring(0,4)}</span></td>`;
+                html += `<td><span class="shift-badge ${getShiftClass(shift)}" style="cursor:pointer;" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">${shift === 'Libur Nasional' ? 'LibNas' : shift.substring(0,4)}</span></td>`;
             }
             html += '</tr>';
         });
@@ -589,7 +619,7 @@
         const startDate = getWeekStart(firstDay);
         
         let html = `<div class="month-grid">
-            <div class="cal-week-header">${CONFIG.DAYS_SHORT.map(d => `<div>${d}</div>`).join('')}</div>
+            <div class="cal-week-header">${CAL_HEADERS.map(d => `<div>${d}</div>`).join('')}</div>
             <div class="cal-week-body">`;
         
         for (let i=0; i<42; i++) {
@@ -597,18 +627,25 @@
             if (d.getMonth() > month + 1) break;
             const isCurrentMonth = d.getMonth() === month;
             const isToday = dateKey(d) === dateKey(new Date());
+            const isHoliday = CONFIG.HOLIDAYS.includes(dateKey(d));
             
-            html += `<div class="cal-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''}" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">
-                <div class="cal-date">${d.getDate()}</div>`;
+            html += `<div class="cal-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''} ${isHoliday && isCurrentMonth ? 'is-holiday' : ''}" onclick="showDayModal(new Date('${dateKey(d)}T00:00:00'))">
+                <div class="cal-date" style="${isHoliday ? 'color:#dc2626;' : ''}">${d.getDate()}</div>`;
             
             if (isCurrentMonth) {
-                const shiftCounts = {};
+                const shiftGroups = { 'Pagi': [], 'Sore': [], 'Libur': [], 'Non-Shift': [], 'Libur Nasional': [] };
                 ALL_STAFF.forEach(staff => {
                     const shift = getShift(staff, d);
-                    shiftCounts[shift] = (shiftCounts[shift] || 0) + 1;
+                    if (shiftGroups[shift]) shiftGroups[shift].push(staff);
                 });
-                for (const [shift, count] of Object.entries(shiftCounts)) {
-                    html += `<div class="cal-staff-item ${getShiftClass(shift)}"><span class="dot"></span>${count} ${shift.substring(0,4)}</div>`;
+                
+                for (const [shift, staffs] of Object.entries(shiftGroups)) {
+                    if (staffs.length > 0) {
+                        html += `<div class="cal-staff-item ${getShiftClass(shift)}" style="flex-direction: column; align-items: flex-start; padding: 5px; gap: 3px;">
+                            <span style="font-weight: 800; font-size: 0.6rem; opacity: 0.8; text-transform: uppercase; border-bottom: 1px solid currentColor; width: 100%; padding-bottom: 2px;">${shift === 'Libur Nasional' ? 'LibNas' : shift}</span>
+                            <span style="font-size: 0.65rem; line-height: 1.4; white-space: normal;">${staffs.join(', ')}</span>
+                        </div>`;
+                    }
                 }
             }
             html += '</div>';
@@ -629,29 +666,29 @@
         for (let m=0; m<12; m++) {
             const firstDay = new Date(year, m, 1);
             const startDate = getWeekStart(firstDay);
-            const isCurrentMonth = m === currentDate.getMonth();
             
             html += `<div class="mini-month"><h4>${CONFIG.MONTHS[m]} ${year}</h4><div class="mini-cal">`;
             
-            CONFIG.DAYS_SHORT.forEach(d => html += `<div class="dh">${d}</div>`);
+            CAL_HEADERS.forEach(d => html += `<div class="dh">${d}</div>`);
             
             for (let i=0; i<42; i++) {
                 const d = new Date(startDate); d.setDate(d.getDate() + i);
                 if (d.getMonth() > m+1) break;
                 if (d.getMonth() !== m) { html += `<div class="day empty"></div>`; continue; }
                 const isToday = dateKey(d) === dateKey(new Date());
+                const isHoliday = CONFIG.HOLIDAYS.includes(dateKey(d));
                 
-                // Count shift types for color coding
                 let pagiCount = 0, soreCount = 0, liburCount = 0;
                 CONFIG.STAFF_MIDWIVES.forEach(staff => {
                     const s = getShift(staff, d);
                     if (s === 'Pagi') pagiCount++;
                     else if (s === 'Sore') soreCount++;
-                    else liburCount++;
+                    else liburCount++; // termasuk libur biasa & libur nasional
                 });
                 
                 let cls = '';
                 if (isToday) cls = 'is-today';
+                else if (isHoliday) cls = 'has-libnas';
                 else if (pagiCount >= soreCount && pagiCount >= liburCount) cls = 'has-pagi';
                 else if (soreCount > pagiCount && soreCount >= liburCount) cls = 'has-sore';
                 else cls = 'has-libur';
@@ -669,13 +706,13 @@
     function updateSummary(date) {
         const pagi = CONFIG.STAFF_MIDWIVES.filter(s => getShift(s, date) === 'Pagi').length;
         const sore = CONFIG.STAFF_MIDWIVES.filter(s => getShift(s, date) === 'Sore').length;
-        const libur = CONFIG.STAFF_MIDWIVES.filter(s => getShift(s, date) === 'Libur').length;
-        const non = CONFIG.STAFF_NON_SHIFT.length;
+        const libur = CONFIG.STAFF_MIDWIVES.filter(s => ['Libur', 'Libur Nasional'].includes(getShift(s, date))).length;
+        const non = CONFIG.STAFF_NON_SHIFT.filter(s => getShift(s, date) === 'Non-Shift').length;
         
         document.getElementById('summaryCards').innerHTML = `
             <div class="summary-card"><div class="summary-count" style="color:#3b82f6;">${pagi}</div><div class="summary-label">Pagi</div></div>
             <div class="summary-card"><div class="summary-count" style="color:#8b5cf6;">${sore}</div><div class="summary-label">Sore</div></div>
-            <div class="summary-card"><div class="summary-count" style="color:#6b7280;">${libur}</div><div class="summary-label">Libur</div></div>
+            <div class="summary-card"><div class="summary-count" style="color:#6b7280;">${libur}</div><div class="summary-label">Libur / LibNas</div></div>
             <div class="summary-card"><div class="summary-count" style="color:#f59e0b;">${non}</div><div class="summary-label">Non-Shift</div></div>
         `;
     }
